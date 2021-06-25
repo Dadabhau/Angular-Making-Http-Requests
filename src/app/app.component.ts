@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { map } from 'rxjs/operators';
 
 import { Post } from './post.model';
+import { PostService } from './post.service';
 
 @Component({
   selector: 'app-root',
@@ -13,55 +14,34 @@ export class AppComponent implements OnInit {
   loadedPosts: Post[] = [];
   isFetchingPosts = false;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private postService: PostService) {}
 
   ngOnInit() {
-    this.fetchPosts();
+    const isFetchingPosts = true;
+    this.postService.fetchPosts().subscribe((posts) => {
+      this.isFetchingPosts = false;
+      this.loadedPosts = posts;
+    });
   }
 
-  onCreatePost(postData: { title: string; content: string }) {
+  onCreatePost(postData: Post) {
     // Send Http request
-    this.http
-      .post<{ name: string }>(
-        'https://ng-complete-guide-d522c-default-rtdb.asia-southeast1.firebasedatabase.app/posts.json',
-        postData
-      )
-      .subscribe((responseData) => {
-        console.log(responseData);
-      });
+    this.postService.createAndStorePost(postData.title, postData.content);
   }
 
   onFetchPosts() {
     // Send Http request
-    this.fetchPosts();
+    this.isFetchingPosts = true;
+    this.postService.fetchPosts().subscribe((posts) => {
+      this.isFetchingPosts = false;
+      this.loadedPosts = posts;
+    });
   }
 
   onClearPosts() {
     // Send Http request
-  }
-
-  private fetchPosts() {
-    this.isFetchingPosts = true;
-    this.http
-      .get<{ [key: string]: Post }>(
-        'https://ng-complete-guide-d522c-default-rtdb.asia-southeast1.firebasedatabase.app/posts.json'
-      )
-      .pipe(
-        map((responseData) => {
-          const postsArray: Post[] = [];
-          for (const key in responseData) {
-            if (responseData.hasOwnProperty(key)) {
-              postsArray.push({ ...responseData[key], id: key });
-            }
-          }
-          return postsArray;
-        })
-      )
-      .subscribe((posts) => {
-        // ...
-        console.log(posts);
-        this.isFetchingPosts = false;
-        this.loadedPosts = posts;
-      });
+    this.postService.deletePosts().subscribe(() => {
+      this.loadedPosts = [];
+    });
   }
 }
